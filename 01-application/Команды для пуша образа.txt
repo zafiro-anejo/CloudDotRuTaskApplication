@@ -1,0 +1,9 @@
+cd /home/alef/PycharmProjects/CloudDotRuTaskApplication/01-application/
+
+sudo docker build --tag task_application .
+
+sudo docker login
+
+sudo docker tag task_application cidervenom/task_application:task_application
+
+sudo docker push cidervenom/task_application:task_application

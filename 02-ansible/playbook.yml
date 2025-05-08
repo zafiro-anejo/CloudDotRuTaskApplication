@@ -1,0 +1,75 @@
+---
+- host: all
+  become: yes
+  tasks:
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      tasks:
+        - name: Install ca-certificates package
+          apt:
+            name: ca-certificates
+            state: present
+        - name: Install curl package
+          apt:
+            name: curl
+            state: present
+
+    - name: Create Docker GPG key directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG key
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+
+    - name: Add Docker repo to apt
+      shell: . /etc/os-release && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      args:
+        executable: /bin/bash
+
+    - name: Install Docker CE
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Configure nginx load balancer
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/nginx.cong
+      notify:
+        - Restart nginx
+
+    - name: Login to Docker Hub
+      command: docker login -u "{{ USERNAME }}" -p "{{ PASSWORD }}"
+
+    - name: Pull Docker image from private registry
+      docker_image:
+        name: cidervenom/task_application:latest
+        source: pull
+
+    - name: Run Docker containers
+      docker_container:
+        name: "task_application_iter_{{ item }}"
+        image: cidervenom/task_application:latest
+        state: started
+        ports:
+          - "800{{ item }}:8000"
+      loop: [1, 2, 3]
+
+  handlers:
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: reload
+      become: yes

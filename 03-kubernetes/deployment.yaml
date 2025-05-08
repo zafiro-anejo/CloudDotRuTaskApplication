@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task_application
+  namespace: task_application
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: task_application
+  template:
+    metadata:
+      labels:
+        app: task_application
+    spec:
+      containers:
+        - name: task_application
+          image: cidervenom/task_application:latest
+          ports:
+          - containerPort: 8000
+          env:
+          - name: AUTHOR
+            value: "${AUTHOR}"
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+      imagePullSecrets:
+      - name: regcred
