@@ -1,4 +1,3 @@
-# CloudDotRuTaskApplication
 # Тестовое задание для DevOps Cloud.ru Camp 2025
 
 ## Описание
